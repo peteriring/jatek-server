@@ -17,7 +17,11 @@ let gameObjects = [];
 io.on('connection', (socket) => {
   console.log('connection');
 
+  let userAdded = false;
+
   socket.on('joined', (data) => {
+    if (userAdded) return;
+
     const { name, gender, id } = data;
 
     socket.uname = name;
@@ -37,6 +41,8 @@ io.on('connection', (socket) => {
 
     gameObjects = [...gameObjects, player];
 
+    userAdded = true;
+
     socket.emit('joined', gameObjects);
     io.emit('new player', player);
   });
@@ -55,10 +61,15 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
+    if (!userAdded) return;
+
     const { uname, uid } = socket;
     console.log(uname, uid, 'disconnected');
+
     gameObjects = gameObjects.filter(obj => obj.id !== uid);
     io.emit('refresh', [...gameObjects]);
+
+    userAdded = false;
   });
 });
 
