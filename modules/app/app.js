@@ -1,23 +1,41 @@
 const http = require('http');
-const Koa = require('koa');
-const app = new Koa();
+const express = require('express');
+const body = require('body-parser');
+const morgan = require('morgan');
+const shortid = require('shortid');
 
-app.use(async function (ctx, next) {
-  const start = new Date();
-  await next();
-  const ms = new Date() - start;
-  ctx.set('X-Response-Time', `${ms}ms`);
+const app = express();
+
+app.use(morgan('tiny'));
+app.use(body.json());
+
+app.post('/login', (req, res) => {
+  const { name, gender } = req.body;
+  const player = {
+    name,
+    gender,
+    id: shortid.generate(),
+  }
+  res.json(player);
 });
 
-app.use(async function (ctx, next) {
-  const start = new Date();
-  await next();
-  const ms = new Date() - start;
-  console.log(`${ctx.method} ${ctx.url} - ${ms}`);
+// catch 404 and forward to error handler
+app.use((req, res, next) => {
+  const err = new Error('Not Found');
+  err.status = 404;
+  next(err);
 });
 
-app.use(ctx => {
-  ctx.body = 'Welcome to app module'
+// error handler
+app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
+  console.error(err);
+
+  res.locals.message = err.message;
+  res.locals.error = req.app.get('env') === 'development' ? err : {};
+
+  // render the error page
+  res.status(err.status || 500);
+  res.send('error');
 });
 
-module.exports = http.createServer(app.callback());
+module.exports = http.createServer(app);
